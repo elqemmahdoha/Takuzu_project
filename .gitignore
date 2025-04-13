@@ -1,4 +1,5 @@
 *.pdf
 *~
 *.Rhistory
-.Rproj.user/
+*.Rproj.user/
+projet_takuzuu/.Rbuildignore

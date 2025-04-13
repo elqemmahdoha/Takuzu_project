@@ -34,4 +34,3 @@ generate_grid <- function(n = 8, filled_cases = 20) {
 
   return(grid)
 }
-
