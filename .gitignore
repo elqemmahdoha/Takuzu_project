@@ -1,3 +1,4 @@
 *.pdf
 *~
 *.Rhistory
+.Rproj.user/
