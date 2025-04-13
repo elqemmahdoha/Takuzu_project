@@ -1,13 +1,15 @@
 #' Génère une grille Takuzu partiellement remplie sans triplets
 #'
-#' @param n Taille de la grille (doit être paire). Par défaut 8.
-#' @param filled_cases Nombre de cases à remplir aléatoirement (doit être raisonnable).
+#' @param size Choix de la taille de la grille : 4, 6 ou 8 (par défaut 8)
+#' @param filled_cases Nombre de cases à remplir aléatoirement (doit être raisonnable)
 #'
 #' @return Une matrice n x n avec des 0, 1 et NA pour les cases vides
 #' @export
-generate_grid <- function(n = 8, filled_cases = 20) {
-  if (n %% 2 != 0) stop("La taille de la grille doit être paire.")
+generate_grid <- function(size = 8, filled_cases = 20) {
+  if (!(size %in% c(4, 6, 8))) stop("La taille de la grille doit être 4, 6 ou 8.")
+  if (size %% 2 != 0) stop("La taille de la grille doit être paire.")
 
+  n <- size
   grid <- matrix(NA, nrow = n, ncol = n)
   count <- 0
   max_attempts <- 500
@@ -29,7 +31,7 @@ generate_grid <- function(n = 8, filled_cases = 20) {
     }
   }
 
-  # S'assurer que les cases sont bien 0, 1 ou NA (au cas où)
+  # S'assurer que les cases sont bien 0, 1 ou NA
   grid <- apply(grid, c(1, 2), function(x) if (is.na(x)) NA else as.integer(x))
 
   return(grid)
