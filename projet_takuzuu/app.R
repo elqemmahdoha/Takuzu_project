@@ -2,50 +2,121 @@ library(shiny)
 library(bslib)
 library(takuzuu)
 
-# === INTERFACE UTILISATEUR ===
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "flatly"),
-  titlePanel("🧐 Jeu Takuzu"),
-  
-  # Carte principale contenant la grille et les contrôles
+  theme = bs_theme(bootswatch = "flatly", base_font = font_google("Quicksand")),
+
+  tags$head(
+    tags$style(HTML("
+      .grid-cell {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+        margin: 3px;
+        border-radius: 10px !important;
+        font-weight: bold;
+      }
+
+      .btn-primary, .btn-secondary, .btn-success, .btn-warning {
+        margin-bottom: 8px;
+        width: 100%;
+      }
+
+      .btn-choose {
+        width: 100px;
+        height: 45px;
+        font-size: 18px;
+        font-weight: bold;
+        margin: 5px;
+      }
+
+      .sidebar-controls {
+        margin-bottom: 25px;
+      }
+
+      .chrono-box {
+        background-color: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 10px;
+        display: inline-block;
+        font-weight: bold;
+        font-size: 18px;
+        color: #333;
+        box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+      }
+
+      .chrono-container {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 20px;
+      }
+
+      .choose-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+    "))
+  ),
+
+  titlePanel(
+    div(
+      h2("🧠 Jeu Takuzu", class = "text-center"),
+      p("Remplis la grille avec des 0 et des 1, sans triplets, avec équilibre, et sans doublons !", class = "text-center")
+    )
+  ),
+
   card(
     full_screen = TRUE,
     height = "auto",
     card_header("🎮 Plateau de jeu interactif"),
-    
+
     layout_sidebar(
       fillable = TRUE,
-      
-      # === Panneau de contrôle (à gauche)
+
+      # === Sidebar gauche
       sidebar = sidebar(
-        title = "Actions",
-        
-        # Choix de la taille de la grille
-        selectInput("grid_size", "Taille de la grille", choices = c("4x4" = 4, "6x6" = 6, "8x8" = 8), selected = 6),
-        
-        # Choix du niveau de difficulté
-        selectInput("difficulty", "Difficulté", choices = c("Facile", "Moyen", "Difficile"), selected = "Moyen"),
-        
-        # Boutons d'action
+        title = "🎛 Contrôles du jeu",
+        class = "sidebar-controls",
+
+        selectInput("grid_size", "📐 Taille de la grille :", choices = c("4x4" = 4, "6x6" = 6, "8x8" = 8), selected = 6),
+        selectInput("difficulty", "🎯 Difficulté :", choices = c("Facile", "Moyen", "Difficile"), selected = "Moyen"),
+
         actionButton("regen", "🔄 Nouvelle Grille", class = "btn-primary"),
         actionButton("reset", "♻ Réinitialiser", class = "btn-secondary"),
+        tags$hr(),
         actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
-        actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
         actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
-        actionButton("choose_0", "Choisir 0", class = "btn-info"),
-        actionButton("choose_1", "Choisir 1", class = "btn-info"),
-        
-        # Chronomètre et message d'état
-        h4("⏱ Temps écoulé :"),
-        textOutput("chrono"),
+        actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
+        tags$hr(),
+        h4("📝 État du jeu :"),
         textOutput("status")
       ),
-      
-      # Affichage dynamique de la grille
-      uiOutput("grid")
+
+      # === Grille + chrono + boutons 0/1
+      mainPanel(
+        class = "text-center",
+
+        # Chrono en haut à gauche
+        div(
+          class = "chrono-container",
+          div(class = "chrono-box", "⏱ Temps écoulé : ", textOutput("chrono", inline = TRUE))
+        ),
+
+        # Grille dynamique
+        uiOutput("grid"),
+
+        # Boutons de sélection juste sous la grille
+        div(
+          class = "choose-container",
+          actionButton("choose_0", "Choisir 0", class = "btn-info btn-choose"),
+          actionButton("choose_1", "Choisir 1", class = "btn-info btn-choose")
+        )
+      )
     )
   )
 )
+
+
 
 # === SERVEUR ===
 server <- function(input, output, session) {
@@ -56,17 +127,17 @@ server <- function(input, output, session) {
   fixed_cells <- reactiveVal(NULL)      # Cases initialement figées
   selected_value <- reactiveVal(NULL)   # Valeur actuellement sélectionnée (0 ou 1)
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
-  
+
   # Chronomètre
   start_time <- reactiveVal(NULL)
   timer_active <- reactiveVal(FALSE)
   show_feedback <- reactiveVal(FALSE)
   autoInvalidate <- reactiveTimer(1000)  # Répète toutes les 1 sec pour le chrono
-  
+
   # === Génère une nouvelle grille selon taille et difficulté choisies ===
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
-    
+
     # Ajuste la proportion de cases visibles selon la difficulté
     proportion <- switch(
       input$difficulty,
@@ -74,10 +145,10 @@ server <- function(input, output, session) {
       "Moyen" = 0.35,
       "Difficile" = 0.2
     )
-    
+
     # Appel à la fonction de génération du package
     jeu <- generer_takuzu_jouable(taille, proportion_visible = proportion)
-    
+
     # Mise à jour des variables réactives
     grid(jeu$grille_visible)
     grid_original(jeu$grille_visible)
@@ -88,12 +159,12 @@ server <- function(input, output, session) {
     timer_active(TRUE)
     show_feedback(FALSE)
   }
-  
+
   # === Boutons : nouvelle grille, reset ... ===
   observe({ if (is.null(grid())) generate_new_grid() })
   observeEvent(input$grid_size, { generate_new_grid() })
   observeEvent(input$regen, { generate_new_grid() })
-  
+
   observeEvent(input$reset, {
     if (!is.null(grid_original())) {
       grid(grid_original())
@@ -104,28 +175,28 @@ server <- function(input, output, session) {
       show_feedback(FALSE)
     }
   })
-  
+
   observeEvent(input$choose_0, { selected_value(0) })
   observeEvent(input$choose_1, { selected_value(1) })
-  
+
   # === Interaction avec les cases modifiables ===
   observe({
     g <- grid()
     fixed <- fixed_cells()
     selected <- selected_value()
     if (is.null(g) || is.null(fixed) || is.null(selected)) return()
-    
+
     n <- nrow(g)
     m <- ncol(g)
-    
+
     isolate({
       for (i in 1:n) {
         for (j in 1:m) {
           if (fixed[i, j]) next   # Ignore les cases fixes
-          
+
           local({
             row <- i; col <- j; cell_id <- paste0("cell_", row, "_", col)
-            
+
             observeEvent(input[[cell_id]], {
               req(input[[cell_id]])
               current_grid <- isolate(grid())
@@ -138,7 +209,7 @@ server <- function(input, output, session) {
       }
     })
   })
-  
+
   # === Affichage de la solution ===
   observeEvent(input$show_solution, {
     sol <- solution()
@@ -152,7 +223,7 @@ server <- function(input, output, session) {
     timer_active(FALSE)
     show_feedback(FALSE)
   })
-  
+
   # === Validation de la grille ===
   observeEvent(input$validate, {
     g <- grid()
@@ -160,12 +231,9 @@ server <- function(input, output, session) {
       status_message("❗ Veuillez d'abord générer une grille.")
       return()
     }
-    
     show_feedback(TRUE)
-    
     timer_active(FALSE)
     duration <- as.integer(Sys.time() - start_time())
-    
     msg <- if (!check_no_triplets(g)) {
       "❌ Il y a des triplets (000 ou 111) dans la grille."
     } else if (!check_balance(g)) {
@@ -177,11 +245,9 @@ server <- function(input, output, session) {
     } else {
       paste("✅ Grille entièrement valide, bravo ! 🎉 Temps :", duration, "secondes")
     }
-    
     status_message(msg)
   })
-  
-  # === Effacer les erreurs ===
+
   observeEvent(input$erase_errors, {
     g <- grid(); sol <- solution(); fixed <- fixed_cells()
     if (is.null(g) || is.null(sol) || is.null(fixed)) return()
@@ -196,17 +262,14 @@ server <- function(input, output, session) {
     show_feedback(FALSE)
     status_message("🧼 Erreurs effacées. Continuez à jouer !")
   })
-  
-  # === Affichage dynamique de la grille ===
+
   output$grid <- renderUI({
     g <- grid(); fixed <- fixed_cells(); sol <- solution()
     if (is.null(g) || is.null(fixed) || is.null(sol)) {
       return(h4("⬅ Cliquez sur 🔄 Nouvelle Grille pour commencer"))
     }
-    
     n <- nrow(g); m <- ncol(g); feedback <- show_feedback()
     grid_html <- tagList()
-    
     for (i in 1:n) {
       row <- tagList()
       for (j in 1:m) {
@@ -227,11 +290,8 @@ server <- function(input, output, session) {
     }
     do.call(tagList, grid_html)
   })
-  
-  # === Affichage du message d'état ===
+
   output$status <- renderText({ status_message() })
-  
-  # === Affichage du chronomètre en direct ===
   output$chrono <- renderText({
     autoInvalidate()
     start <- start_time()
