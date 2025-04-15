@@ -1,12 +1,30 @@
 library(shiny)
 library(bslib)
 library(takuzuu)
+library(shiny)
+library(shinyWidgets)
 
 ui <- fluidPage(
   theme = bs_theme(bootswatch = "flatly", base_font = font_google("Quicksand")),
 
   tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('setBodyClass', function(className) {
+        document.body.className = className;
+      });
+    ")),
     tags$style(HTML("
+      body.dark-mode {
+        background-color: #121212 !important;
+        color: #f5f5f5 !important;
+      }
+
+      .card, .card-header {
+        background-color: inherit !important;
+        border: none;
+      }
+
       .grid-cell {
         width: 60px;
         height: 60px;
@@ -77,6 +95,9 @@ ui <- fluidPage(
       sidebar = sidebar(
         title = "🎛 Contrôles du jeu",
         class = "sidebar-controls",
+
+        switchInput("dark_mode", "🌙 Mode sombre", value = FALSE, inline = TRUE),
+        tags$hr(),
 
         selectInput("grid_size", "📐 Taille de la grille :", choices = c("4x4" = 4, "6x6" = 6, "8x8" = 8), selected = 6),
         selectInput("difficulty", "🎯 Difficulté :", choices = c("Facile", "Moyen", "Difficile"), selected = "Moyen"),
@@ -178,6 +199,15 @@ server <- function(input, output, session) {
 
   observeEvent(input$choose_0, { selected_value(0) })
   observeEvent(input$choose_1, { selected_value(1) })
+
+  # === Mode sombre et clair ===
+  observe({
+    if (isTRUE(input$dark_mode)) {
+      session$sendCustomMessage(type = "setBodyClass", message = "dark-mode")
+    } else {
+      session$sendCustomMessage(type = "setBodyClass", message = "")
+    }
+  })
 
   # === Interaction avec les cases modifiables ===
   observe({
