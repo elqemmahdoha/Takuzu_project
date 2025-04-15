@@ -2,8 +2,9 @@ library(shiny)
 library(bslib)
 library(takuzuu)
 
+#Interface utilisateur
 ui <- fluidPage(
-  theme = bs_theme(bootswatch = "flatly"),
+  theme = bs_theme(bootswatch = "flatly"),  # Un thème sympa pour l'apparence
   titlePanel("🧠 Jeu Takuzu"),
 
   card(
@@ -15,23 +16,34 @@ ui <- fluidPage(
       fillable = TRUE,
       sidebar = sidebar(
         title = "Actions",
+        #Choix de la taille de la grille
         selectInput("grid_size", "Taille de la grille", choices = c("4x4" = 4, "6x6" = 6, "8x8" = 8), selected = 6),
+        #Bouton pour générer une nouvelle grille
         actionButton("regen", "🔄 Nouvelle Grille", class = "btn-primary"),
+        #Bouton pour réinitialiser la grille actuelle
         actionButton("reset", "♻ Réinitialiser", class = "btn-secondary"),
+        #Bouton pour valider la grille
         actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
+        #Afficher la solution
         actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
+        #Choix de la valeur à insérer
         actionButton("choose_0", "Choisir 0", class = "btn-info"),
         actionButton("choose_1", "Choisir 1", class = "btn-info"),
+        #Chronomètre
         h4("⏱ Temps écoulé :"),
         textOutput("chrono"),
+        #Messages d'état du jeu
         textOutput("status")
       ),
+      #Affichage de la grille
       uiOutput("grid")
     )
   )
 )
 
+#Serveur
 server <- function(input, output, session) {
+  #Variables réactives pour stocker la grille, la solution, les cases fixes, etc.
   grid <- reactiveVal(NULL)
   grid_original <- reactiveVal(NULL)
   solution <- reactiveVal(NULL)
@@ -40,9 +52,16 @@ server <- function(input, output, session) {
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
   start_time <- reactiveVal(NULL)
   timer_active <- reactiveVal(FALSE)
-  autoInvalidate <- reactiveTimer(1000)  # Actualisation toutes les secondes
+  autoInvalidate <- reactiveTimer(1000)  # Mise à jour toutes les secondes pour le chrono
 
-  # Fonction pour générer une nouvelle grille
+  #Générer une grille automatiquement au démarrage si vide
+  observe({
+    if (is.null(grid())) {
+      generate_new_grid()
+    }
+  })
+
+  #Fonction pour générer une nouvelle grille selon la taille choisie
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
     proportion <- switch(
@@ -57,28 +76,15 @@ server <- function(input, output, session) {
     solution(jeu$solution)
     fixed_cells(!is.na(jeu$grille_visible))
     status_message("✅ Nouvelle grille générée.")
-    start_time(Sys.time())
+    start_time(Sys.time())  # Démarrer le chrono
     timer_active(TRUE)
   }
 
-  # Au démarrage : si aucune grille, en créer une
-  observe({
-    if (is.null(grid())) {
-      generate_new_grid()
-    }
-  })
+  #Génère une nouvelle grille lorsqu'on change la taille ou clique sur "Nouvelle Grille"
+  observeEvent(input$grid_size, generate_new_grid)
+  observeEvent(input$regen, generate_new_grid)
 
-  # Recharger une grille selon taille choisie
-  observeEvent(input$grid_size, {
-    generate_new_grid()
-  })
-
-  # Bouton 🔄
-  observeEvent(input$regen, {
-    generate_new_grid()
-  })
-
-  # Bouton ♻ Réinitialiser
+  #Bouton pour réinitialiser la grille à l'état de départ
   observeEvent(input$reset, {
     if (!is.null(grid_original())) {
       grid(grid_original())
@@ -89,10 +95,11 @@ server <- function(input, output, session) {
     }
   })
 
+  #Choix du chiffre à insérer
   observeEvent(input$choose_0, { selected_value(0) })
   observeEvent(input$choose_1, { selected_value(1) })
 
-  # Interaction case par case
+  #Permet de modifier la grille en cliquant sur les cases non fixes
   observe({
     g <- grid()
     fixed <- fixed_cells()
@@ -112,7 +119,7 @@ server <- function(input, output, session) {
             cell_id <- paste0("cell_", row, "_", col)
 
             observeEvent(input[[cell_id]], {
-              req(input[[cell_id]])
+              req(input[[cell_id]])  # S'assurer que le bouton existe
               current_grid <- isolate(grid())
               current_grid[row, col] <- selected
               grid(current_grid)
@@ -123,7 +130,7 @@ server <- function(input, output, session) {
     })
   })
 
-  # Affichage solution
+  #Affiche la solution complète de la grille
   observeEvent(input$show_solution, {
     sol <- solution()
     if (is.null(sol)) {
@@ -131,12 +138,12 @@ server <- function(input, output, session) {
       return()
     }
     grid(sol)
-    fixed_cells(matrix(TRUE, nrow = nrow(sol), ncol = ncol(sol)))
+    fixed_cells(matrix(TRUE, nrow = nrow(sol), ncol = ncol(sol)))  # Bloquer toute la grille
     status_message("✅ Solution affichée.")
     timer_active(FALSE)
   })
 
-  # HTML de la grille
+  #Génération de l'affichage visuel de la grille dans l'UI
   output$grid <- renderUI({
     g <- grid()
     fixed <- fixed_cells()
@@ -167,7 +174,7 @@ server <- function(input, output, session) {
     do.call(tagList, grid_html)
   })
 
-  # Validation
+  #Validation de la grille avec retour de message selon le cas
   observeEvent(input$validate, {
     g <- grid()
     if (is.null(g)) {
@@ -193,10 +200,12 @@ server <- function(input, output, session) {
     status_message(msg)
   })
 
+  #Affichage du message d'état
   output$status <- renderText({ status_message() })
 
+  #Affichage du chrono en temps réel
   output$chrono <- renderText({
-    autoInvalidate()
+    autoInvalidate()  # Force le rafraîchissement toutes les secondes
     start <- start_time()
     if (is.null(start)) return("0 seconde")
     diff <- as.integer(Sys.time() - start)
