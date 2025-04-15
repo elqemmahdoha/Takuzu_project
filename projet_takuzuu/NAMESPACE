@@ -5,3 +5,4 @@ export(check_no_na)
 export(check_no_triplets)
 export(check_unique_rows_cols)
 export(generer_takuzu_jouable)
+

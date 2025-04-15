@@ -1,11 +1,18 @@
 library(shiny)
 library(shinyjs)
 library(bslib)
-library(takuzuu)  
+library(takuzuu)  # Votre bibliothèque contenant generate_grid() et check_*
 
 ui <- fluidPage(
+<<<<<<< HEAD
+  useShinyjs(),  # Activation de shinyjs
+  theme = bs_theme(bootswatch = "flatly"),
+  
+  # Ajout du style CSS pour des animations fluides
+=======
   useShinyjs(),  
   theme = bs_theme(bootswatch = "flatly"),
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
   tags$style(HTML("
     .action-button {
       transition: background-color 0.2s ease-in-out;
@@ -71,9 +78,15 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   grid <- reactiveVal(NULL)
   fixed_cells <- reactiveVal(NULL)  # Mémorise les cases fixes
+<<<<<<< HEAD
+  status_message <- reactiveVal("Sélectionnez une taille de grille pour commencer.")
+  
+  # Générer une nouvelle grille
+=======
   selected_value <- reactiveVal(NULL)  
   status_message <- reactiveVal("Sélectionnez une taille de grille pour commencer.")
   
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
   generate_new_grid <- function() {
     selected_size <- as.numeric(input$grid_size)
     filled <- switch(
@@ -84,10 +97,18 @@ server <- function(input, output, session) {
     )
     new_grid <- generate_grid(size = selected_size, filled_cases = filled)
     grid(new_grid)
+<<<<<<< HEAD
+    fixed_cells(!is.na(new_grid))  # TRUE si la case est fixée
+    status_message("Nouvelle grille générée.")
+  }
+  
+  # Actions pour la sélection de taille et régénération de la grille
+=======
     fixed_cells(!is.na(new_grid))  
     status_message("Nouvelle grille générée.")
   }
   
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
   observeEvent(input$grid_size, {
     generate_new_grid()
   })
@@ -96,6 +117,13 @@ server <- function(input, output, session) {
     generate_new_grid()
   })
   
+<<<<<<< HEAD
+  # Interaction avec les cases modifiables via shinyjs
+  observe({
+    g <- grid()
+    fixed <- fixed_cells()
+    if (is.null(g) || is.null(fixed)) return()
+=======
   observeEvent(input$choose_0, {
     selected_value(0)
   })
@@ -109,6 +137,7 @@ server <- function(input, output, session) {
     fixed <- fixed_cells()
     selected <- selected_value()
     if (is.null(g) || is.null(fixed) || is.null(selected)) return()
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
     
     n <- nrow(g)
     m <- ncol(g)
@@ -124,17 +153,38 @@ server <- function(input, output, session) {
           
           observeEvent(input[[cell_id]], {
             current_grid <- isolate(grid())
+<<<<<<< HEAD
+            current_value <- current_grid[row, col]
+            
+            # Cycle entre NA -> 0 -> 1 -> NA pour UNE seule cellule
+            new_value <- if (is.na(current_value)) 0 else if (current_value == 0) 1 else NA
+            
+            # Mettre à jour UNIQUEMENT la cellule cliquée dans la grille
+            current_grid[row, col] <- new_value
+            grid(current_grid)
+            
+            # Mettre à jour le bouton visuellement via shinyjs
+            shinyjs::runjs(sprintf("
+              $('#%s').text('%s').css('background-color', '%s');
+            ", cell_id, ifelse(is.na(new_value), "", new_value),
+                                   ifelse(is.na(new_value), "white", ifelse(new_value == 0, "lightblue", "lightgreen"))))
+=======
             current_grid[row, col] <- selected  
             grid(current_grid) 
             shinyjs::runjs(sprintf("
               $('#%s').text('%s').css('background-color', 'lightblue');
             ", cell_id, selected))
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
           }, ignoreInit = TRUE)
         })
       }
     }
   })
   
+<<<<<<< HEAD
+  # Affichage de la grille
+=======
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
   output$grid <- renderUI({
     g <- grid()
     fixed <- fixed_cells()
@@ -166,7 +216,11 @@ server <- function(input, output, session) {
     do.call(tagList, grid_html)
   })
   
+<<<<<<< HEAD
+  # Validation de la grille
+=======
   
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
   observeEvent(input$validate, {
     g <- grid()
     if (is.null(g)) {
@@ -195,5 +249,8 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+<<<<<<< HEAD
+=======
 
 
+>>>>>>> 16e1d3c8ed2d96c87946ec3019af9b7d0c9f3044
