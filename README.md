@@ -53,7 +53,7 @@ Rscript install_packages.R
 Après l'installation des packages, exécutez cette commande dans R ou RStudio pour lancer le jeu :
 
 ```bash
-shiny::runApp()
+shiny::runApp("projet_takuzuu")
 ```
 ---
 
