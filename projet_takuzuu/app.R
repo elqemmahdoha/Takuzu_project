@@ -131,7 +131,7 @@ ui <- page_fillable(
       full_screen = FALSE,
       height = "auto",
       h4("📝 État du jeu :"),
-      textOutput("status"),
+      div(class = "status-text", textOutput("status")),
       tags$hr(),
       card_header("🧰 Actions de jeu"),
       tags$hr(),
@@ -139,6 +139,85 @@ ui <- page_fillable(
       actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
       actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
       actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning")
+    )
+  ),
+  navset_card_tab(
+    height = 450,
+    full_screen = TRUE,
+    title = "ℹ️ Informations supplémentaires",
+    
+    nav_panel(
+      "📘 Règles",
+      card_title("📏 Les Règles du Takuzu"),
+      markdown("
+### 🧠 Objectif du jeu
+Compléter la grille avec des **0** et des **1**, tout en respectant des règles précises :
+
+- ➖ **Deux chiffres identiques max côte à côte**
+  (ex: pas de `1 1 1` ou `0 0 0`)
+- ⚖️ **Autant de 0 que de 1** dans chaque ligne **et** colonne
+- 🧬 **Aucune ligne ou colonne ne doit être identique** à une autre
+
+🟢 **Conseil** : La logique est ton amie, pas le hasard 😌
+    ")
+    ),
+    
+    nav_panel(
+      "💡 Astuces",
+      card_title("✨ Conseils de pro"),
+      markdown("
+### 🤔 Par où commencer ?
+
+- 🔍 **Repère les évidences** :
+  ex : `1 1 _` → `1 1 0`
+- 🧱 **Remplis les blocs** quand tu es sûr… pas besoin de deviner
+- 🧩 **Complète une ligne ou colonne équilibrée** (même nombre de 0 et 1)
+
+⚡ **Utilise les outils à ta dispo** :
+- 🔄 Réinitialise si besoin
+- 💡 Clique sur *Indice* pour débloquer une situation
+    ")
+    ),
+    
+    nav_panel(
+      "🔗 En savoir plus",
+      card_title("📚 À propos du jeu"),
+      markdown("
+Takuzu (ou **Binairo**) est un jeu de logique d'origine japonaise.
+Il se joue comme un **sudoku binaire**, avec une vraie dose de réflexion 💡.
+
+> Pour les curieux :
+[👉 Lire l’article Wikipédia](https://fr.wikipedia.org/wiki/Takuzu)
+
+🧘‍♂️ Prend ton temps, respire, et savoure la logique.
+
+---
+
+### 🧾 À propos du projet
+
+Notre équipe est composée de deux étudiantes en Master 1 Statistiques et Sciences des Données à l’Université de Montpellier, animées par notre passion commune pour l’analyse de données et l’innovation.
+Chacune de nous apporte ses compétences et son expertise pour faire avancer ce projet.
+
+👩‍💻 Kaoutar SARIH
+👩‍💻 Doha EL QEMMAH
+
+---
+
+### 📬 Contacts
+
+Nous restons à votre disposition pour toute question, collaboration ou suggestion.
+N’hésitez pas à nous contacter via les liens suivants :
+
+- [GitHub – Kaoutar SARIH](https://github.com/ksarih)
+- [GitHub – Doha EL QEMMAH](https://github.com/elqemmahdoha)
+
+---
+
+### 🔗 Sources
+
+Code source du projet disponible ici :
+[🔍 Voir sur GitHub](https://github.com/elqemmahdoha/Takuzu_project)
+  ")
     )
   )
 )
