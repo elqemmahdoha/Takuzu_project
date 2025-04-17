@@ -106,6 +106,7 @@ ui <- fluidPage(
         actionButton("reset", "♻ Réinitialiser", class = "btn-secondary"),
         tags$hr(),
         actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
+        actionButton("hint", "💡 Indice", class = "btn-info"),
         actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
         actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
         tags$hr(),
@@ -148,6 +149,7 @@ server <- function(input, output, session) {
   fixed_cells <- reactiveVal(NULL)      # Cases initialement figées
   selected_value <- reactiveVal(NULL)   # Valeur actuellement sélectionnée (0 ou 1)
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
+  hinted_cells <- reactiveVal(matrix(FALSE, nrow = 8, ncol = 8))  # taille par défaut
 
   # Chronomètre
   start_time <- reactiveVal(NULL)
@@ -155,9 +157,38 @@ server <- function(input, output, session) {
   show_feedback <- reactiveVal(FALSE)
   autoInvalidate <- reactiveTimer(1000)  # Répète toutes les 1 sec pour le chrono
 
+  # Génère les indices
+  observeEvent(input$hint, {
+    g <- grid()
+    fixed <- fixed_cells()
+    sol <- solution()
+    hints <- hinted_cells()
+
+    if (is.null(g) || is.null(fixed) || is.null(sol)) return()
+
+    empty_cells <- which(is.na(g), arr.ind = TRUE)
+    if (nrow(empty_cells) > 0) {
+      rand_cell <- empty_cells[sample(nrow(empty_cells), 1), ]
+      row <- rand_cell[1]; col <- rand_cell[2]
+
+      g[row, col] <- sol[row, col]
+      hints[row, col] <- TRUE  # cette case est un indice
+      grid(g)
+      hinted_cells(hints)
+
+      fixed[row, col] <- TRUE  
+      fixed_cells(fixed)
+
+      status_message("💡 Indice : une case a été révélée !")
+    } else {
+      status_message("❗ Aucune case vide à révéler.")
+    }
+  })
+
   # === Génère une nouvelle grille selon taille et difficulté choisies ===
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
+    hinted_cells(matrix(FALSE, nrow = taille, ncol = taille))
 
     # Ajuste la proportion de cases visibles selon la difficulté
     proportion <- switch(
@@ -295,9 +326,11 @@ server <- function(input, output, session) {
 
   output$grid <- renderUI({
     g <- grid(); fixed <- fixed_cells(); sol <- solution()
+    hints <- hinted_cells()
     if (is.null(g) || is.null(fixed) || is.null(sol)) {
       return(h4("⬅ Cliquez sur 🔄 Nouvelle Grille pour commencer"))
     }
+
     n <- nrow(g); m <- ncol(g); feedback <- show_feedback()
     grid_html <- tagList()
     for (i in 1:n) {
@@ -306,7 +339,9 @@ server <- function(input, output, session) {
         cell_id <- paste0("cell_", i, "_", j)
         val <- ifelse(is.na(g[i, j]), "", as.character(g[i, j]))
         color <- "black"
-        if (feedback && !fixed[i, j] && !is.na(g[i, j])) {
+        if (fixed[i, j]) {
+          color <- if (hints[i, j]) "green" else "gray"
+        } else if (feedback && !is.na(g[i, j])) {
           color <- if (g[i, j] == sol[i, j]) "green" else "red"
         }
         row[[j]] <- actionButton(
