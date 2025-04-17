@@ -3,9 +3,9 @@ library(bslib)
 library(takuzuu)
 library(shinyWidgets)
 
-ui <- fluidPage(
+ui <- page_fillable(
   theme = bs_theme(bootswatch = "flatly", base_font = font_google("Quicksand")),
-
+  
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
     tags$script(HTML("
@@ -73,94 +73,72 @@ ui <- fluidPage(
         margin-top: 20px;
       }
 
-      @keyframes flash {
-        0% { opacity: 1; }
-        50% { opacity: 0.2; }
-        100% { opacity: 1; }
-      }
-
-      .victory-overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 60px;
-        font-weight: bold;
-        color: #28a745;
-        text-shadow: 3px 3px 8px #000;
-        z-index: 9999;
-        animation: flash 1s infinite;
-        background-color: rgba(255, 255, 255, 0.85);
-        padding: 30px 50px;
-        border-radius: 20px;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
-      }
-
-      .victory-container {
-        position: relative;
-        min-height: 300px;
+      .right-card {
+        margin-left: 20px;
       }
     "))
   ),
-
+  
   titlePanel(
     div(
       h2("🧠 Jeu Takuzu", class = "text-center"),
       p("Remplis la grille avec des 0 et des 1, sans triplets, avec équilibre, et sans doublons !", class = "text-center")
     )
   ),
-
-  card(
-    full_screen = TRUE,
-    height = "auto",
-    card_header("🎮 Plateau de jeu interactif"),
-
+  
+  layout_columns(
+    col_widths = c(9, 3),
+    gap = "20px",
+    
+    # Colonne principale : sidebar + grille
     layout_sidebar(
       fillable = TRUE,
-
+      
       sidebar = sidebar(
         title = "🎛 Contrôles du jeu",
         class = "sidebar-controls",
-
+        
         switchInput("dark_mode", "🌙 Mode sombre", value = FALSE, inline = TRUE),
         tags$hr(),
-
+        
         selectInput("grid_size", "📐 Taille de la grille :", choices = c("4x4" = 4, "6x6" = 6, "8x8" = 8), selected = 6),
         selectInput("difficulty", "🎯 Difficulté :", choices = c("Facile", "Moyen", "Difficile"), selected = "Moyen"),
-
+        
         actionButton("regen", "🔄 Nouvelle Grille", class = "btn-primary"),
-        actionButton("reset", "♻ Réinitialiser", class = "btn-secondary"),
-        tags$hr(),
-        actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
-        actionButton("hint", "💡 Indice", class = "btn-info"),
-        actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
-        actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
-        tags$hr(),
-        h4("📝 État du jeu :"),
-        textOutput("status")
+        actionButton("reset", "♻ Réinitialiser", class = "btn-secondary")
       ),
-
+      
       mainPanel(
         class = "text-center",
-
         div(
           class = "chrono-container",
           div(class = "chrono-box", "⏱ Temps écoulé : ", textOutput("chrono", inline = TRUE))
         ),
-
-        # Grille + message de victoire superposé
-        div(
-          class = "victory-container",
-          uiOutput("grid"),
-          uiOutput("victory_message")
-        ),
-
+        
+        uiOutput("grid"),
+        
         div(
           class = "choose-container",
           actionButton("choose_0", "Choisir 0", class = "btn-info btn-choose"),
           actionButton("choose_1", "Choisir 1", class = "btn-info btn-choose")
         )
       )
+    ),
+    
+    # Colonne droite : Boutons actions
+    card(
+      class = "right-card",
+      full_screen = FALSE,
+      height = "auto",
+      h4("📝 État du jeu :"),
+      textOutput("status"),
+      tags$hr(),
+      card_header("🧰 Actions de jeu"),
+      tags$hr(),
+      actionButton("hint", "💡 Indice", class = "btn-info"),
+      actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
+      actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
+      actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning")
     )
   )
 )
