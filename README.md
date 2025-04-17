@@ -39,7 +39,7 @@ Cloner le dépôt à partir de la commande suivante:
 ```bash
 git clone https://github.com/elqemmahdoha/Takuzu_project.git
 cd Takuzu_project
-
+```
 
 ### Étape 2 : Installer les dépendances
 
@@ -47,14 +47,14 @@ Un script install_packages.R est fourni pour installer automatiquement tous les 
 
 ```bash
 Rscript install_packages.R
-
+```
 ### Étape 3 : Lancer l'application Shiny
 
 Après l'installation des packages, exécutez cette commande dans R ou RStudio pour lancer le jeu :
 
 ```bash
 shiny::runApp()
-
+```
 ---
 
 ## 👩‍💻 Auteurs 
