@@ -31,6 +31,30 @@ Souvent comparé au Sudoku en raison de sa grille carrée et de ses règles logi
 
 ## 💻 Code pour construire le projet
 
+Suivez les étapes ci-dessous pour lancer le jeu sur votre machine :
+
+### Étape 1 : Cloner le dépôt
+Cloner le dépôt à partir de la commande suivante:
+
+```bash
+git clone https://github.com/elqemmahdoha/Takuzu_project.git
+cd Takuzu_project
+
+
+### Étape 2 : Installer les dépendances
+
+Un script install_packages.R est fourni pour installer automatiquement tous les packages nécessaires. Exécutez la commande suivante :
+
+```bash
+Rscript install_packages.R
+
+### Étape 3 : Lancer l'application Shiny
+
+Après l'installation des packages, exécutez cette commande dans R ou RStudio pour lancer le jeu :
+
+```bash
+shiny::runApp()
+
 ---
 
 ## 👩‍💻 Auteurs 
