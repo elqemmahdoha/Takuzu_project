@@ -76,6 +76,34 @@ ui <- page_fillable(
       .right-card {
         margin-left: 20px;
       }
+
+      @keyframes flash {
+        0% { opacity: 1; }
+        50% { opacity: 0.2; }
+        100% { opacity: 1; }
+      }
+      
+      .victory-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 60px;
+      font-weight: bold;
+      color: #28a745;
+      text-shadow: 3px 3px 8px #000;
+      z-index: 9999;
+      animation: flash 1s infinite;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 30px 50px;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      }
+      
+      .victory-container {
+      position: relative;
+      min-height: 300px;
+      }
     "))
   ),
   
@@ -115,7 +143,12 @@ ui <- page_fillable(
           div(class = "chrono-box", "⏱ Temps écoulé : ", textOutput("chrono", inline = TRUE))
         ),
         
-        uiOutput("grid"),
+        # 💥 Grille + victoire superposée
+        div(
+          class = "victory-container",
+          uiOutput("grid"),
+          uiOutput("victory_message")  # <- sera affiché PAR-DESSUS
+        ),
         
         div(
           class = "choose-container",
