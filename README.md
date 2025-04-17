@@ -55,6 +55,11 @@ Après l'installation des packages, exécutez cette commande dans R ou RStudio p
 ```bash
 shiny::runApp("projet_takuzuu")
 ```
+
+Le premier argument de `runApp` est le chemin d’accès, depuis votre répertoire de travail, vers le dossier de l’application. Le code ci-dessus suppose que le dossier de l’application se trouve **dans** votre répertoire de travail. Dans ce cas, le chemin d’accès est simplement le nom du dossier. 
+
+Si ce n’est pas le cas, veuillez spécifier le chemin complet.
+
 ---
 
 ## 👩‍💻 Auteurs 
