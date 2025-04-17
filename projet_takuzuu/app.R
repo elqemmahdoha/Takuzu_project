@@ -172,11 +172,7 @@ server <- function(input, output, session) {
   fixed_cells <- reactiveVal(NULL)
   selected_value <- reactiveVal(NULL)
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
-<<<<<<< HEAD
   hinted_cells <- reactiveVal(matrix(FALSE, nrow = 8, ncol = 8))
-=======
-  hinted_cells <- reactiveVal(matrix(FALSE, nrow = 8, ncol = 8))  # taille par défaut
->>>>>>> fee6aa1b22eedfccd51d8e7ed516a4af70c3513f
 
   start_time <- reactiveVal(NULL)
   timer_active <- reactiveVal(FALSE)
@@ -210,38 +206,6 @@ server <- function(input, output, session) {
     }
   })
 
-<<<<<<< HEAD
-=======
-  # Génère les indices
-  observeEvent(input$hint, {
-    g <- grid()
-    fixed <- fixed_cells()
-    sol <- solution()
-    hints <- hinted_cells()
-
-    if (is.null(g) || is.null(fixed) || is.null(sol)) return()
-
-    empty_cells <- which(is.na(g), arr.ind = TRUE)
-    if (nrow(empty_cells) > 0) {
-      rand_cell <- empty_cells[sample(nrow(empty_cells), 1), ]
-      row <- rand_cell[1]; col <- rand_cell[2]
-
-      g[row, col] <- sol[row, col]
-      hints[row, col] <- TRUE  # cette case est un indice
-      grid(g)
-      hinted_cells(hints)
-
-      fixed[row, col] <- TRUE  
-      fixed_cells(fixed)
-
-      status_message("💡 Indice : une case a été révélée !")
-    } else {
-      status_message("❗ Aucune case vide à révéler.")
-    }
-  })
-
-  # === Génère une nouvelle grille selon taille et difficulté choisies ===
->>>>>>> fee6aa1b22eedfccd51d8e7ed516a4af70c3513f
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
     hinted_cells(matrix(FALSE, nrow = taille, ncol = taille))
