@@ -441,15 +441,32 @@ server <- function(input, output, session) {
         cell_id <- paste0("cell_", i, "_", j)
         val <- ifelse(is.na(g[i, j]), "", as.character(g[i, j]))
         color <- "black"
+        background <- "white"
+        
         if (fixed[i, j]) {
-          color <- if (hints[i, j]) "green" else "gray"
+          if (hints[i, j]) {
+            background <- "#28a745"  # vert
+            color <- "white"
+          } else {
+            color <- "gray"
+            background <- "#e9ecef"  # gris clair
+          }
         } else if (feedback && !is.na(g[i, j])) {
-          color <- if (g[i, j] == sol[i, j]) "green" else "red"
+          if (g[i, j] == sol[i, j]) {
+            background <- "#28a745"
+            color <- "white"
+          } else {
+            background <- "#dc3545"  # rouge
+            color <- "white"
+          }
         }
         row[[j]] <- actionButton(
           inputId = cell_id,
           label = val,
-          style = paste0("width: 50px; height: 50px; margin: 2px; font-size: 18px; color:", color, ";"),
+          style = paste0(
+            "width: 50px; height: 50px; margin: 2px; font-size: 18px; font-weight: bold;",
+            "color:", color, "; background-color:", background, ";"
+          ),
           disabled = fixed[i, j]
         )
       }
