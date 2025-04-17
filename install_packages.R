@@ -1,6 +1,7 @@
 packages_needed <- c(
   "shiny",
-  "bslib"
+  "bslib",
+  "shinyWidgets"
 )
 
 install_if_missing <- function(pkg) {

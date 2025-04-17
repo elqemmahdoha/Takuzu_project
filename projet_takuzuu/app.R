@@ -1,7 +1,6 @@
 library(shiny)
 library(bslib)
 library(takuzuu)
-library(shiny)
 library(shinyWidgets)
 
 ui <- fluidPage(
@@ -73,6 +72,34 @@ ui <- fluidPage(
         justify-content: center;
         margin-top: 20px;
       }
+
+      @keyframes flash {
+        0% { opacity: 1; }
+        50% { opacity: 0.2; }
+        100% { opacity: 1; }
+      }
+
+      .victory-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 60px;
+        font-weight: bold;
+        color: #28a745;
+        text-shadow: 3px 3px 8px #000;
+        z-index: 9999;
+        animation: flash 1s infinite;
+        background-color: rgba(255, 255, 255, 0.85);
+        padding: 30px 50px;
+        border-radius: 20px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .victory-container {
+        position: relative;
+        min-height: 300px;
+      }
     "))
   ),
 
@@ -91,7 +118,6 @@ ui <- fluidPage(
     layout_sidebar(
       fillable = TRUE,
 
-      # === Sidebar gauche
       sidebar = sidebar(
         title = "🎛 Contrôles du jeu",
         class = "sidebar-controls",
@@ -106,6 +132,7 @@ ui <- fluidPage(
         actionButton("reset", "♻ Réinitialiser", class = "btn-secondary"),
         tags$hr(),
         actionButton("validate", "✅ Valider la Grille", class = "btn-success"),
+        actionButton("hint", "💡 Indice", class = "btn-info"),
         actionButton("erase_errors", "🧹 Effacer les erreurs", class = "btn-warning"),
         actionButton("show_solution", "🧩 Afficher la solution", class = "btn-warning"),
         tags$hr(),
@@ -113,20 +140,21 @@ ui <- fluidPage(
         textOutput("status")
       ),
 
-      # === Grille + chrono + boutons 0/1
       mainPanel(
         class = "text-center",
 
-        # Chrono en haut à gauche
         div(
           class = "chrono-container",
           div(class = "chrono-box", "⏱ Temps écoulé : ", textOutput("chrono", inline = TRUE))
         ),
 
-        # Grille dynamique
-        uiOutput("grid"),
+        # Grille + message de victoire superposé
+        div(
+          class = "victory-container",
+          uiOutput("grid"),
+          uiOutput("victory_message")
+        ),
 
-        # Boutons de sélection juste sous la grille
         div(
           class = "choose-container",
           actionButton("choose_0", "Choisir 0", class = "btn-info btn-choose"),
@@ -137,29 +165,51 @@ ui <- fluidPage(
   )
 )
 
-
-
-# === SERVEUR ===
 server <- function(input, output, session) {
-  # Éléments réactifs pour suivre l'état du jeu
-  grid <- reactiveVal(NULL)             # Grille actuelle
-  grid_original <- reactiveVal(NULL)    # Grille de départ (pour reset)
-  solution <- reactiveVal(NULL)         # Solution complète
-  fixed_cells <- reactiveVal(NULL)      # Cases initialement figées
-  selected_value <- reactiveVal(NULL)   # Valeur actuellement sélectionnée (0 ou 1)
+  grid <- reactiveVal(NULL)
+  grid_original <- reactiveVal(NULL)
+  solution <- reactiveVal(NULL)
+  fixed_cells <- reactiveVal(NULL)
+  selected_value <- reactiveVal(NULL)
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
+  hinted_cells <- reactiveVal(matrix(FALSE, nrow = 8, ncol = 8))
 
-  # Chronomètre
   start_time <- reactiveVal(NULL)
   timer_active <- reactiveVal(FALSE)
   show_feedback <- reactiveVal(FALSE)
-  autoInvalidate <- reactiveTimer(1000)  # Répète toutes les 1 sec pour le chrono
+  autoInvalidate <- reactiveTimer(1000)
 
-  # === Génère une nouvelle grille selon taille et difficulté choisies ===
+  observeEvent(input$hint, {
+    g <- grid()
+    fixed <- fixed_cells()
+    sol <- solution()
+    hints <- hinted_cells()
+
+    if (is.null(g) || is.null(fixed) || is.null(sol)) return()
+
+    empty_cells <- which(is.na(g), arr.ind = TRUE)
+    if (nrow(empty_cells) > 0) {
+      rand_cell <- empty_cells[sample(nrow(empty_cells), 1), ]
+      row <- rand_cell[1]; col <- rand_cell[2]
+
+      g[row, col] <- sol[row, col]
+      hints[row, col] <- TRUE
+      grid(g)
+      hinted_cells(hints)
+
+      fixed[row, col] <- TRUE
+      fixed_cells(fixed)
+
+      status_message("💡 Indice : une case a été révélée !")
+    } else {
+      status_message("❗ Aucune case vide à révéler.")
+    }
+  })
+
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
+    hinted_cells(matrix(FALSE, nrow = taille, ncol = taille))
 
-    # Ajuste la proportion de cases visibles selon la difficulté
     proportion <- switch(
       input$difficulty,
       "Facile" = 0.5,
@@ -167,10 +217,8 @@ server <- function(input, output, session) {
       "Difficile" = 0.2
     )
 
-    # Appel à la fonction de génération du package
     jeu <- generer_takuzu_jouable(taille, proportion_visible = proportion)
 
-    # Mise à jour des variables réactives
     grid(jeu$grille_visible)
     grid_original(jeu$grille_visible)
     solution(jeu$solution)
@@ -181,7 +229,6 @@ server <- function(input, output, session) {
     show_feedback(FALSE)
   }
 
-  # === Boutons : nouvelle grille, reset ... ===
   observe({ if (is.null(grid())) generate_new_grid() })
   observeEvent(input$grid_size, { generate_new_grid() })
   observeEvent(input$regen, { generate_new_grid() })
@@ -200,7 +247,6 @@ server <- function(input, output, session) {
   observeEvent(input$choose_0, { selected_value(0) })
   observeEvent(input$choose_1, { selected_value(1) })
 
-  # === Mode sombre et clair ===
   observe({
     if (isTRUE(input$dark_mode)) {
       session$sendCustomMessage(type = "setBodyClass", message = "dark-mode")
@@ -209,7 +255,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # === Interaction avec les cases modifiables ===
   observe({
     g <- grid()
     fixed <- fixed_cells()
@@ -222,7 +267,7 @@ server <- function(input, output, session) {
     isolate({
       for (i in 1:n) {
         for (j in 1:m) {
-          if (fixed[i, j]) next   # Ignore les cases fixes
+          if (fixed[i, j]) next
 
           local({
             row <- i; col <- j; cell_id <- paste0("cell_", row, "_", col)
@@ -240,7 +285,6 @@ server <- function(input, output, session) {
     })
   })
 
-  # === Affichage de la solution ===
   observeEvent(input$show_solution, {
     sol <- solution()
     if (is.null(sol)) {
@@ -254,7 +298,6 @@ server <- function(input, output, session) {
     show_feedback(FALSE)
   })
 
-  # === Validation de la grille ===
   observeEvent(input$validate, {
     g <- grid()
     if (is.null(g)) {
@@ -295,9 +338,11 @@ server <- function(input, output, session) {
 
   output$grid <- renderUI({
     g <- grid(); fixed <- fixed_cells(); sol <- solution()
+    hints <- hinted_cells()
     if (is.null(g) || is.null(fixed) || is.null(sol)) {
       return(h4("⬅ Cliquez sur 🔄 Nouvelle Grille pour commencer"))
     }
+
     n <- nrow(g); m <- ncol(g); feedback <- show_feedback()
     grid_html <- tagList()
     for (i in 1:n) {
@@ -306,7 +351,9 @@ server <- function(input, output, session) {
         cell_id <- paste0("cell_", i, "_", j)
         val <- ifelse(is.na(g[i, j]), "", as.character(g[i, j]))
         color <- "black"
-        if (feedback && !fixed[i, j] && !is.na(g[i, j])) {
+        if (fixed[i, j]) {
+          color <- if (hints[i, j]) "green" else "gray"
+        } else if (feedback && !is.na(g[i, j])) {
           color <- if (g[i, j] == sol[i, j]) "green" else "red"
         }
         row[[j]] <- actionButton(
@@ -322,6 +369,16 @@ server <- function(input, output, session) {
   })
 
   output$status <- renderText({ status_message() })
+
+  output$victory_message <- renderUI({
+    if (grepl("🎉", status_message())) {
+      tags$div(
+        class = "victory-overlay",
+        "🎉 BRAVOOOO T'as gagné !!! 🎉"
+      )
+    }
+  })
+
   output$chrono <- renderText({
     autoInvalidate()
     start <- start_time()
@@ -330,10 +387,10 @@ server <- function(input, output, session) {
     if (timer_active()) {
       paste(diff, "secondes")
     } else {
+      if (grepl("🎉", status_message())) return("")
       paste(diff, "secondes (terminé)")
     }
   })
 }
 
-# === Lancement ===
 shinyApp(ui, server)
