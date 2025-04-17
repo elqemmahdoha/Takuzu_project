@@ -3,3 +3,4 @@
 *.Rhistory
 *.Rproj.user/
 projet_takuzuu/.Rbuildignore
+*.tar.gz
