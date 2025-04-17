@@ -14,63 +14,9 @@ ui <- page_fillable(
       });
     ")),
     tags$style(HTML("
-      body.dark-mode {
-        background-color: #121212 !important;
-        color: #f5f5f5 !important;
-      }
-
       .card, .card-header {
         background-color: inherit !important;
         border: none;
-      }
-
-      .grid-cell {
-        width: 60px;
-        height: 60px;
-        font-size: 20px;
-        margin: 3px;
-        border-radius: 10px !important;
-        font-weight: bold;
-      }
-
-      .btn-primary, .btn-secondary, .btn-success, .btn-warning {
-        margin-bottom: 8px;
-        width: 100%;
-      }
-
-      .btn-choose {
-        width: 100px;
-        height: 45px;
-        font-size: 18px;
-        font-weight: bold;
-        margin: 5px;
-      }
-
-      .sidebar-controls {
-        margin-bottom: 25px;
-      }
-
-      .chrono-box {
-        background-color: #f8f9fa;
-        padding: 10px 15px;
-        border-radius: 10px;
-        display: inline-block;
-        font-weight: bold;
-        font-size: 18px;
-        color: #333;
-        box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
-      }
-
-      .chrono-container {
-        display: flex;
-        justify-content: flex-start;
-        margin-bottom: 20px;
-      }
-
-      .choose-container {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
       }
 
       .right-card {
@@ -82,7 +28,7 @@ ui <- page_fillable(
         50% { opacity: 0.2; }
         100% { opacity: 1; }
       }
-      
+
       .victory-overlay {
       position: absolute;
       top: 50%;
@@ -99,7 +45,7 @@ ui <- page_fillable(
       border-radius: 20px;
       box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
       }
-      
+
       .victory-container {
       position: relative;
       min-height: 300px;
@@ -260,55 +206,55 @@ server <- function(input, output, session) {
   grid_original <- reactiveVal(NULL)
   solution <- reactiveVal(NULL)
   fixed_cells <- reactiveVal(NULL)
-  selected_value <- reactiveVal(NULL)
+  selected_value <- reactiveVal(0)
   status_message <- reactiveVal("Cliquez sur 🔄 Nouvelle Grille pour commencer")
   hinted_cells <- reactiveVal(matrix(FALSE, nrow = 8, ncol = 8))
-
+  
   start_time <- reactiveVal(NULL)
   timer_active <- reactiveVal(FALSE)
   show_feedback <- reactiveVal(FALSE)
   autoInvalidate <- reactiveTimer(1000)
-
+  
   observeEvent(input$hint, {
     g <- grid()
     fixed <- fixed_cells()
     sol <- solution()
     hints <- hinted_cells()
-
+    
     if (is.null(g) || is.null(fixed) || is.null(sol)) return()
-
+    
     empty_cells <- which(is.na(g), arr.ind = TRUE)
     if (nrow(empty_cells) > 0) {
       rand_cell <- empty_cells[sample(nrow(empty_cells), 1), ]
       row <- rand_cell[1]; col <- rand_cell[2]
-
+      
       g[row, col] <- sol[row, col]
       hints[row, col] <- TRUE
       grid(g)
       hinted_cells(hints)
-
+      
       fixed[row, col] <- TRUE
       fixed_cells(fixed)
-
+      
       status_message("💡 Indice : une case a été révélée !")
     } else {
       status_message("❗ Aucune case vide à révéler.")
     }
   })
-
+  
   generate_new_grid <- function() {
     taille <- as.numeric(input$grid_size)
     hinted_cells(matrix(FALSE, nrow = taille, ncol = taille))
-
+    
     proportion <- switch(
       input$difficulty,
       "Facile" = 0.5,
       "Moyen" = 0.35,
       "Difficile" = 0.2
     )
-
+    
     jeu <- generer_takuzu_jouable(taille, proportion_visible = proportion)
-
+    
     grid(jeu$grille_visible)
     grid_original(jeu$grille_visible)
     solution(jeu$solution)
@@ -318,11 +264,11 @@ server <- function(input, output, session) {
     timer_active(TRUE)
     show_feedback(FALSE)
   }
-
+  
   observe({ if (is.null(grid())) generate_new_grid() })
   observeEvent(input$grid_size, { generate_new_grid() })
   observeEvent(input$regen, { generate_new_grid() })
-
+  
   observeEvent(input$reset, {
     if (!is.null(grid_original())) {
       grid(grid_original())
@@ -333,10 +279,10 @@ server <- function(input, output, session) {
       show_feedback(FALSE)
     }
   })
-
+  
   observeEvent(input$choose_0, { selected_value(0) })
   observeEvent(input$choose_1, { selected_value(1) })
-
+  
   observe({
     if (isTRUE(input$dark_mode)) {
       session$sendCustomMessage(type = "setBodyClass", message = "dark-mode")
@@ -344,24 +290,24 @@ server <- function(input, output, session) {
       session$sendCustomMessage(type = "setBodyClass", message = "")
     }
   })
-
+  
   observe({
     g <- grid()
     fixed <- fixed_cells()
     selected <- selected_value()
     if (is.null(g) || is.null(fixed) || is.null(selected)) return()
-
+    
     n <- nrow(g)
     m <- ncol(g)
-
+    
     isolate({
       for (i in 1:n) {
         for (j in 1:m) {
           if (fixed[i, j]) next
-
+          
           local({
             row <- i; col <- j; cell_id <- paste0("cell_", row, "_", col)
-
+            
             observeEvent(input[[cell_id]], {
               req(input[[cell_id]])
               current_grid <- isolate(grid())
@@ -374,7 +320,7 @@ server <- function(input, output, session) {
       }
     })
   })
-
+  
   observeEvent(input$show_solution, {
     sol <- solution()
     if (is.null(sol)) {
@@ -387,7 +333,7 @@ server <- function(input, output, session) {
     timer_active(FALSE)
     show_feedback(FALSE)
   })
-
+  
   observeEvent(input$validate, {
     g <- grid()
     if (is.null(g)) {
@@ -410,7 +356,7 @@ server <- function(input, output, session) {
     }
     status_message(msg)
   })
-
+  
   observeEvent(input$erase_errors, {
     g <- grid(); sol <- solution(); fixed <- fixed_cells()
     if (is.null(g) || is.null(sol) || is.null(fixed)) return()
@@ -425,14 +371,27 @@ server <- function(input, output, session) {
     show_feedback(FALSE)
     status_message("🧼 Erreurs effacées. Continuez à jouer !")
   })
-
+  
+  observe({
+    g <- grid()
+    if (is.null(g) || any(is.na(g))) return()
+    
+    if (check_no_triplets(g) && check_balance(g) && check_unique_rows_cols(g)) {
+      timer_active(FALSE)
+      duration <- as.integer(Sys.time() - start_time())
+      status_message(paste("✅ Grille entièrement valide, bravo ! 🎉 Temps :", duration, "secondes"))
+      show_feedback(TRUE)
+    }
+  })
+  
+  
   output$grid <- renderUI({
     g <- grid(); fixed <- fixed_cells(); sol <- solution()
     hints <- hinted_cells()
     if (is.null(g) || is.null(fixed) || is.null(sol)) {
       return(h4("⬅ Cliquez sur 🔄 Nouvelle Grille pour commencer"))
     }
-
+    
     n <- nrow(g); m <- ncol(g); feedback <- show_feedback()
     grid_html <- tagList()
     for (i in 1:n) {
@@ -474,9 +433,9 @@ server <- function(input, output, session) {
     }
     do.call(tagList, grid_html)
   })
-
+  
   output$status <- renderText({ status_message() })
-
+  
   output$victory_message <- renderUI({
     if (grepl("🎉", status_message())) {
       tags$div(
@@ -485,7 +444,7 @@ server <- function(input, output, session) {
       )
     }
   })
-
+  
   output$chrono <- renderText({
     autoInvalidate()
     start <- start_time()
